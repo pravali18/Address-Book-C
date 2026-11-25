@@ -1,0 +1,440 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "contact.h"
+#include <ctype.h>
+/* To validate the name contains letters and spaces*/
+void validname(AddressBook *addressBook, int i)
+{
+    int flag = 0, k;
+    char name[50];
+
+    do
+    {
+        flag = 0;
+        printf("Enter the name:");
+        scanf(" %49[^\n]", name);
+        int len = strlen(name);
+        for (k = 0; k < len; k++) /*checking the length of the name*/
+        {
+            if (!isalpha(name[k]) && name[k] != ' ') /* the name should only alphabets and spaces allowed , if not flag make invalid */
+            {
+                flag = 1; /*mark invalid and stop checking*/
+                break;
+            }
+        }
+        if (flag == 1) /*show error message if the name is invalid*/
+        {
+            printf("Enter valid name\n");
+        }
+
+    } while (flag == 1);
+    strcpy(addressBook->contacts[i].name, name); /*copy the valid name into the contact*/
+}
+/*To validate the phone number contains only 10 digits and it should bestart with '6' or high number and it also unique*/
+void validphone(AddressBook *addressBook, int i)
+{
+    char phonenum[20];
+    int flag = 0, k;
+
+    do
+    {
+        flag = 0; /*reset flag for each attempt*/
+        printf("Enter the phonenum:");
+        scanf(" %19[^\n]", phonenum);
+        int len = strlen(phonenum);
+        for (k = 0; k < len; k++)
+        {
+            if (!isdigit(phonenum[k]) || len != 10 || phonenum[0] < '6' || phonenum[0] > '9') /*must be digits only, exactly 10 long, and first digit between 6 and 9*/
+            {
+                flag = 1;
+                break;
+            }
+        }
+        if (flag == 1) /*show error message if the number is invalid*/
+        {
+            printf("Enter the valid phonenum\n");
+        }
+
+    } while (flag == 1);
+
+    strcpy(addressBook->contacts[i].phone, phonenum);
+}
+/*To validate the email it should be in lowercase letters ,one @ in email,end with.com* and store the contacts*/
+void validemail(AddressBook *addressBook, int i)
+{
+    char email[50];
+    int flag = 0, k;
+
+    do
+    {
+        flag = 0;
+        printf("Enter the email:");
+        scanf(" %49[^\n]", email);
+        int len = strlen(email);
+        for (k = 0; k < len; k++)
+        /*if the letters given in uppercase also it conert to lowercase*/
+        {
+            email[k] = tolower(email[k]);
+        }
+        /*email must be at least 5 chars and must end with ".com"*/
+        if (len < 5 || strcmp(email + len - 4, ".com") != 0)
+        {
+            flag = 1;
+        }
+        for (k = 0; k < len; k++)
+        {
+            /*only letters, digits, '@' and '.' are allowed*/
+            if (!islower(email[k]) && !isdigit(email[k]) && email[k] != '@' && email[k] != '.')
+            {
+                flag = 1;
+                break;
+            }
+        }
+        /*'@' must exist, must not be the first char, and must appear only once*/
+        char *ptr = strchr(email, '@');
+
+        if (ptr == NULL || ptr == email ||
+            strchr(ptr + 1, '@') != NULL)
+        {
+            flag = 1;
+        }
+        if (flag == 1)
+        {
+            printf("enter validemail\n");
+        }
+
+    } while (flag == 1);
+    /*Prints all contacts in a table format*/
+    strcpy(addressBook->contacts[i].email, email);
+}
+/*to list all the contacts in tabular form*/
+void listContacts(AddressBook *addressBook)
+{
+    int i = 0;
+    // list all the contacts..
+    printf("--------------------------------------------------------\n");
+    printf("%-5s\t %-15s %-12s\t\t %s\n", "SNO", "NAME", "PHONENUM", "EMAIL");
+    printf("--------------------------------------------------------\n");
+
+    for (int i = 0; i < addressBook->contactCount; i++)
+    {
+        printf(" %-5d %-15s\t %-12s\t %s\n", i + 1, addressBook->contacts[i].name, addressBook->contacts[i].phone, addressBook->contacts[i].email);
+    }
+}
+/*Create new  contacts by the after validname,validphone and validemail*/
+void createContact(AddressBook *addressBook)
+{
+    /*i = index of the new contact; j is a loop index; flag = 1 means duplicate found*/
+    int i = addressBook->contactCount, j, flag = 0;
+
+    /* Define the logic to create a Contacts */
+    /* if contacts are maximum addressBook is full*/
+    if (addressBook->contactCount >= MAX_CONTACTS)
+    {
+        printf("Addressbook is full !\n");
+        return;
+    }
+    /*keep ask valid name*/
+    validname(addressBook, i);
+    /*  keep asking valid phone*/
+    do
+    /*keep asking until a valid and unique phone number is entered*/
+    {
+        flag = 0;
+        validphone(addressBook, i);
+        /*compare with all existing contacts*/
+        for (j = 0; j < addressBook->contactCount; j++)
+        {
+            /*if phone number already present*/
+            if (strcmp(addressBook->contacts[j].phone, addressBook->contacts[i].phone) == 0)
+            {
+                printf("phone number already exists\n");
+                flag = 1;
+                break;
+            }
+        }
+    } while (flag == 1);
+    /*keep asking valid email*/
+    do
+    {
+        flag = 0;
+        validemail(addressBook, i);
+        /*compare with all existing contacts*/
+        for (j = 0; j < addressBook->contactCount; j++)
+        {
+            /* if email already present*/
+            if (strcmp(addressBook->contacts[j].email, addressBook->contacts[i].email) == 0)
+            {
+                printf("email already exists\n");
+                flag = 1;
+                break;
+            }
+        }
+    } while (flag == 1);
+    /*contact is complete, so increase the contactcount*/
+    addressBook->contactCount++;
+    printf("contact created successfully!\n");
+}
+/*to search the contact by use name,phone and email*/
+void searchContact(AddressBook *addressBook)
+{
+
+    char name[40];
+    char phone[20];
+    char email[60];
+    int found = 0, i;
+    int choice; /*user's may search option (1-name, 2-phone, 3-email)*/
+    /* Define the logic to search a Contacts */
+    printf("enter the choice:");
+    scanf("%d", &choice);
+    switch (choice)
+    {
+    case 1: /*search by name*/
+        printf("Enter the name:");
+        scanf(" %39s", name);
+        for (i = 0; i < addressBook->contactCount; i++)
+        {
+            /*print the contact if the name matches*/
+            if (strcmp(addressBook->contacts[i].name, name) == 0)
+            {
+                printf("%s | %s |%s", addressBook->contacts[i].name,
+                       addressBook->contacts[i].phone,
+                       addressBook->contacts[i].email);
+
+                found = 1;
+            }
+        }
+        break;
+    case 2: /*search by phonenum*/
+        printf("Enter the phone num:");
+        scanf(" %19s", phone);
+        for (i = 0; i < addressBook->contactCount; i++)
+        {
+            /*print the contact if the phonenum matches*/
+            if (strcmp(addressBook->contacts[i].phone, phone) == 0)
+            {
+                printf("%s | %s |%s\n", addressBook->contacts[i].name,
+                       addressBook->contacts[i].phone,
+                       addressBook->contacts[i].email);
+
+                found = 1;
+            }
+        }
+        break;
+    case 3: /*search by email*/
+        printf("Enter the email:");
+        scanf(" %59s", email);
+        for (i = 0; i < addressBook->contactCount; i++)
+        {
+            /*print contact if email matches*/
+            if (strcmp(addressBook->contacts[i].email, email) == 0)
+            {
+                printf("%s | %s |%s", addressBook->contacts[i].name,
+                       addressBook->contacts[i].phone,
+                       addressBook->contacts[i].email);
+
+                found = 1;
+            }
+        }
+        break;
+
+    default: /*option not in cases send error msg*/
+        printf("enter valid choice:");
+        break;
+    }
+    if (found == 0) /*no match found*/
+    {
+        printf("contact not found\n");
+    }
+}
+/*to edit contacts by the name,phone and email which want to edit we can edit exisiting contacts*/
+void editContact(AddressBook *addressBook)
+{
+
+    char name[50];
+    char phone[20];
+    char email[50];
+    /* serialno = contact number shown to user; index = array position; choice = field to edit*/
+    int serialno, index, j, choice, flag = 0;
+
+    if (addressBook->contactCount == 0)
+    {
+        printf("no contacts to update\n");
+        return;
+    }
+
+    /* Define the logic for Editcontact */
+    /*list all the contacts for pick the contact*/
+    listContacts(addressBook);
+
+    printf("Enter the serialno of contact:");
+    if (scanf("%d", &serialno) != 1) /*exit if the input is not a number*/
+    {
+
+        printf("Invalid input");
+        return;
+    }
+    if (serialno < 1 || serialno > addressBook->contactCount) /*exit if the serial number is out of range*/
+    {
+        printf("Invalid serial number\n");
+        return;
+    }
+    /*convert serial number (starts at 1) to array index (starts at 0)*/
+    index = serialno - 1;
+    /*which exisiting contact to edit ,to edit what you want*/
+    printf("1. Name\n2. Phone\n3. Email\n What do you want to edit: ");
+    if (scanf("%d", &choice) != 1) /*if the choice is not a number print error message*/
+    {
+
+        printf("invalid choice");
+        return;
+    }
+    switch (choice)
+    {
+    case 1: // edit by name
+        validname(addressBook, index);
+        break;
+    case 2: // edit by phonenum
+        do
+        {
+            flag = 0;
+            validphone(addressBook, index);
+            for (j = 0; j < addressBook->contactCount; j++)
+            {
+                if (j != index && strcmp(addressBook->contacts[j].phone, addressBook->contacts[index].phone) == 0)
+
+                {
+                    printf("phone number alreday exists\n");
+                    flag = 1;
+                    break;
+                }
+            }
+
+        } while (flag == 1);
+        break;
+    case 3:
+        do
+        {
+            flag = 0;
+            validemail(addressBook, index);
+            for (j = 0; j < addressBook->contactCount; j++)
+            {
+                /*skip the contact being edited, check for duplicates in others*/
+                if (j != index && strcmp(addressBook->contacts[j].email, addressBook->contacts[index].email) == 0)
+                {
+                    printf("email already exisit\n");
+                    flag = 1;
+                    break;
+                }
+            }
+
+        } while (flag == 1);
+        break;
+    default: // any other invalid choice
+        printf("valid choice\n");
+        break;
+    }
+    /*update the contact after edit*/
+    printf(" contact updated  %s %s %s", addressBook->contacts[index].name,
+           addressBook->contacts[index].phone,
+           addressBook->contacts[index].email);
+}
+/*to delete the contact*/
+void deleteContact(AddressBook *addressBook)
+
+{
+    int serialno, index, i;
+    char ch;
+    /*nothing to delete if the book is empty*/
+    if (addressBook->contactCount == 0)
+    {
+        printf("No contacts to delete\n");
+        return;
+    }
+
+    /* Define the logic for deleteContact */
+    /*list all the contacts for pick the contact*/
+    listContacts(addressBook);
+
+    printf("Enter the serial no to delete: ");
+    if (scanf("%d", &serialno) != 1) /*if serialno not a number*/
+    {
+        printf("Invalid input\n");
+        return;
+    }
+    /*if the serial number is out of range*/
+    if (serialno < 1 || serialno > addressBook->contactCount)
+    {
+        printf("Invalid serial number\n");
+        return;
+    }
+    /*convert serial number (starts at 1) to array index (starts at 0)*/
+    index = serialno - 1;
+    /*before deleteing the contact confirm with the (y-yes) or (n-no)*/
+    printf("Delete %s  | %s  | %s    ? (y/n): ",
+           addressBook->contacts[index].name,
+           addressBook->contacts[index].phone,
+           addressBook->contacts[index].email);
+    scanf(" %c", &ch);
+    /*cancel if the user did not say yes*/
+    if (ch != 'y' && ch != 'Y')
+    {
+        printf("Delete cancelled\n");
+        return;
+    }
+
+    /* shift every later contact one position left */
+    for (i = index; i < addressBook->contactCount - 1; i++)
+    {
+        addressBook->contacts[i] = addressBook->contacts[i + 1];
+    }
+
+    addressBook->contactCount--; /*contact deleted means decrease the contactcount*/
+    printf("Contact deleted\n");
+}
+/* Loads contacts from contact.csv into the address book*/
+
+void loadContacts(AddressBook *addressBook)
+{
+    addressBook->contactCount = 0; /*start with zero contacts*/
+    FILE *fp;
+    fp = fopen("contact.csv", "r"); /*open file in read mode*/
+    if (fp == NULL)                 /*stop if the file does not exist*/
+    {
+        printf("file not found\n");
+        return;
+    }
+    int i = 0;
+    /*read name,phone,email from each line until the file ends or the book is full*/
+    while (i < MAX_CONTACTS &&
+           fscanf(fp, " %39[^,],%19[^,],%59[^\n]",
+                  addressBook->contacts[i].name,
+                  addressBook->contacts[i].phone,
+                  addressBook->contacts[i].email) == 3)
+    {
+        i++;
+    }
+    /*update the contact count with the number of contacts loaded*/
+    addressBook->contactCount = i;
+    fclose(fp);
+}
+/*before exiting the AddressBook save the contactsin contact.csv*/
+void saveandexit(AddressBook *addressBook)
+{
+    FILE *fp;
+    fp = fopen("contact.csv", "w"); /*open file in write mode*/
+    if (fp == NULL)
+    { /*if file not exist give error message*/
+        printf("file opening failed\n");
+        return;
+    }
+    // write each contact as name,phone,email on its own line
+    for (int i = 0; i < addressBook->contactCount; i++)
+    {
+        fprintf(fp, "%s,%s,%s\n", addressBook->contacts[i].name,
+                addressBook->contacts[i].phone,
+                addressBook->contacts[i].email);
+    }
+    fclose(fp); /*close the file*/
+}
